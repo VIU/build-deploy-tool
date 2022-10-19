@@ -10,7 +10,7 @@ image:
 
 variables:
   #More Information on Kaniko Caching: https://cloud.google.com/build/docs/kaniko-cache
-  KANIKO_CACHE_ARGS: "--cache=true --cache-copy-layers=true --cache-ttl=24h"
+  KANIKO_CACHE_ARGS: "--cache=true --cache-ttl=24h"
   VERSIONLABELMETHOD: "OnlyIfThisCommitHasVersion" # options: "OnlyIfThisCommitHasVersion","LastVersionTagInGit"
   IMAGE_LABELS: >
     --label org.opencontainers.image.vendor=$CI_SERVER_URL/$GITLAB_USER_LOGIN
@@ -93,4 +93,4 @@ build-image:
   environment:
     #This is only here for completeness, since there are no CI CD Variables with this scope, the project defaults are used
     # to push to this projects docker registry
-    name: push-to-gitlab-project-registry
+    name: build-image
