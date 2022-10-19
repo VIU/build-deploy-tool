@@ -1,11 +1,18 @@
+image:
+  name: gcr.io/kaniko-project/executor:debug
+  entrypoint: [""]
+
+variables:
+  #More Information on Kaniko Caching: https://cloud.google.com/build/docs/kaniko-cache
+  KANIKO_CACHE_ARGS: "--cache=true --cache-copy-layers=true --cache-ttl=24h"
+
 docker-build:
   # Use the official docker image.
-  image: docker:latest
   stage: build
-  services:
-    - docker:dind
   before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n $CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD | base64)\"}}}" > /kaniko/.docker/config.json
+
   # Default branch leaves tag empty (= latest tag)
   # All other branches are tagged with the escaped branch name (commit ref slug)
   script:
@@ -17,14 +24,28 @@ docker-build:
         tag=":$CI_COMMIT_REF_SLUG"
         echo "Running on branch '$CI_COMMIT_BRANCH': tag = $tag"
       fi
-    - echo "Bulding kubectl image"
-    - docker build --pull -t "$CI_REGISTRY_IMAGE/kubectl${tag}" -f ./legacy/Dockerfile.kubectl ./legacy
-    - docker push "$CI_REGISTRY_IMAGE/kubectl${tag}"
-    - echo "Bulding kubectl-build-deploy-dind image"
-    - docker build --pull -t "$CI_REGISTRY_IMAGE/kubectl-build-deploy-dind${tag}" --build-arg IMAGE_REPO=$CI_REGISTRY_IMAGE" --build-arg UPSTREAM_TAG=${tag} -f ./legacy/Dockerfile.kubectl-build-deploy-dind ./legacy
-    - docker push "$CI_REGISTRY_IMAGE/kubectl-build-deploy-dind${tag}"
-  # Run this job in a branch where a Dockerfile exists
-  rules:
-    - if: $CI_COMMIT_BRANCH
-      exists:
-        - Dockerfile
+    - |
+      echo "Bulding kubectl image"
+      /kaniko/executor \
+        $KANIKO_CACHE_ARGS 
+        --context $CI_PROJECT_DIR/legacy \
+        --dockerfile $CI_PROJECT_DIR/legacy/Dockerfile.kubectl \
+        --destination $CI_REGISTRY_IMAGE/kubectl:${tag} \
+      
+      echo "Bulding kubectl-build-deploy-dind image"
+      /kaniko/executor \
+        $KANIKO_CACHE_ARGS 
+        --context $CI_PROJECT_DIR/legacy \
+        --dockerfile $CI_PROJECT_DIR/legacy/Dockerfile.kubectl-build-deploy-dind \
+        --destination $CI_REGISTRY_IMAGE/kubectl-build-deploy-dind:${tag} \
+        --build-arg "IMAGE_REPO=$CI_REGISTRY_IMAGE"
+        --build-arg "UPSTREAM_TAG=${tag}"
+      
+      echo "Bulding build-deploy-tool image"
+      /kaniko/executor \
+        $KANIKO_CACHE_ARGS 
+        --context $CI_PROJECT_DIR/legacy \
+        --dockerfile $CI_PROJECT_DIR/legacy/Dockerfile.kubectl-build-deploy-dind \
+        --destination $CI_REGISTRY_IMAGE/kubectl-build-deploy-dind:${tag} \
+        --build-arg "IMAGE_REPO=$CI_REGISTRY_IMAGE"
+        --build-arg "UPSTREAM_TAG=${tag}"
