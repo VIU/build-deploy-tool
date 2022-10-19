@@ -17,14 +17,11 @@ docker-build:
         tag=":$CI_COMMIT_REF_SLUG"
         echo "Running on branch '$CI_COMMIT_BRANCH': tag = $tag"
       fi
-
     - echo "Bulding kubectl image"
     - docker build --pull -t "$CI_REGISTRY_IMAGE/kubectl${tag}" -f Dockerfile.kubectl ./legacy
     - docker push "$CI_REGISTRY_IMAGE/kubectl${tag}"
-
     - echo "Bulding kubectl-build-deploy-dind image"
-    - docker build --pull -t "$CI_REGISTRY_IMAGE/kubectl-build-deploy-dind${tag}" --build-arg 
-    IMAGE_REPO=$CI_REGISTRY_IMAGE" --build-arg UPSTREAM_TAG=${tag} -f Dockerfile.kubectl-build-deploy-dind ./legacy
+    - docker build --pull -t "$CI_REGISTRY_IMAGE/kubectl-build-deploy-dind${tag}" --build-arg IMAGE_REPO=$CI_REGISTRY_IMAGE" --build-arg UPSTREAM_TAG=${tag} -f Dockerfile.kubectl-build-deploy-dind ./legacy
     - docker push "$CI_REGISTRY_IMAGE/kubectl-build-deploy-dind${tag}"
   # Run this job in a branch where a Dockerfile exists
   rules:
