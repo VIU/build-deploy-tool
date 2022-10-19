@@ -10,7 +10,8 @@ image:
 
 variables:
   #More Information on Kaniko Caching: https://cloud.google.com/build/docs/kaniko-cache
-  KANIKO_CACHE_ARGS: "--cache=true --cache-ttl=24h"
+  #KANIKO_CACHE_ARGS: "--cache=true --cache-ttl=24h"
+  KANIKO_CACHE_ARGS: ""
   VERSIONLABELMETHOD: "OnlyIfThisCommitHasVersion" # options: "OnlyIfThisCommitHasVersion","LastVersionTagInGit"
   IMAGE_LABELS: >
     --label org.opencontainers.image.vendor=$CI_SERVER_URL/$GITLAB_USER_LOGIN
