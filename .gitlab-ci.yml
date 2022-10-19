@@ -27,18 +27,18 @@ docker-build:
     - |
       echo "Bulding kubectl image"
       /kaniko/executor \
-        $KANIKO_CACHE_ARGS 
+        $KANIKO_CACHE_ARGS \
         --context $CI_PROJECT_DIR/legacy \
         --dockerfile $CI_PROJECT_DIR/legacy/Dockerfile.kubectl \
-        --destination $CI_REGISTRY_IMAGE/kubectl:${tag} \
+        --destination $CI_REGISTRY_IMAGE/kubectl:${tag}
       
       echo "Bulding kubectl-build-deploy-dind image"
       /kaniko/executor \
-        $KANIKO_CACHE_ARGS 
+        $KANIKO_CACHE_ARGS \
         --context $CI_PROJECT_DIR/legacy \
         --dockerfile $CI_PROJECT_DIR/legacy/Dockerfile.kubectl-build-deploy-dind \
         --destination $CI_REGISTRY_IMAGE/kubectl-build-deploy-dind:${tag} \
-        --build-arg "IMAGE_REPO=$CI_REGISTRY_IMAGE"
+        --build-arg "IMAGE_REPO=$CI_REGISTRY_IMAGE" \
         --build-arg "UPSTREAM_TAG=${tag}"
       
       echo "Bulding build-deploy-tool image"
