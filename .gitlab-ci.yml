@@ -21,17 +21,17 @@ docker-build:
         tag=""
         echo "Running on default branch '$CI_DEFAULT_BRANCH': tag = 'latest'"
       else
-        tag=":$CI_COMMIT_REF_SLUG"
+        tag="$CI_COMMIT_REF_SLUG"
         echo "Running on branch '$CI_COMMIT_BRANCH': tag = $tag"
       fi
     - |
       echo "Bulding kubectl image"
-      echo "Kaniko arguments to run:  $KANIKO_CACHE_ARGS --context $CI_PROJECT_DIR/legacy --dockerfile $CI_PROJECT_DIR/legacy/Dockerfile.kubectl --destination $CI_REGISTRY_IMAGE/kubectl:${tag}"
+      echo "Kaniko arguments to run:  $KANIKO_CACHE_ARGS --context $CI_PROJECT_DIR/legacy --dockerfile $CI_PROJECT_DIR/legacy/Dockerfile.kubectl --destination $CI_REGISTRY_IMAGE/kubectl$:{tag}"
       /kaniko/executor \
         $KANIKO_CACHE_ARGS \
         --context $CI_PROJECT_DIR/legacy \
         --dockerfile $CI_PROJECT_DIR/legacy/Dockerfile.kubectl \
-        --destination $CI_REGISTRY_IMAGE/kubectl${tag}
+        --destination $CI_REGISTRY_IMAGE/kubectl:${tag}
       
       echo "Bulding kubectl-build-deploy-dind image"
       echo "Kaniko arguments to run: $KANIKO_CACHE_ARGS --context $CI_PROJECT_DIR/legacy --dockerfile $CI_PROJECT_DIR/legacy/Dockerfile.kubectl-build-deploy-dind --destination $CI_REGISTRY_IMAGE/kubectl-build-deploy-dind:${tag} --build-arg IMAGE_REPO=$CI_REGISTRY_IMAGE --build-arg UPSTREAM_TAG=${tag}"
@@ -39,7 +39,7 @@ docker-build:
         $KANIKO_CACHE_ARGS \
         --context $CI_PROJECT_DIR/legacy \
         --dockerfile $CI_PROJECT_DIR/legacy/Dockerfile.kubectl-build-deploy-dind \
-        --destination $CI_REGISTRY_IMAGE/kubectl-build-deploy-dind${tag} \
+        --destination $CI_REGISTRY_IMAGE/kubectl-build-deploy-dind:${tag} \
         --build-arg "IMAGE_REPO=$CI_REGISTRY_IMAGE" \
         --build-arg "UPSTREAM_TAG=${tag}"
       
