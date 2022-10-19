@@ -42,5 +42,3 @@ docker-build:
         --destination $CI_REGISTRY_IMAGE/kubectl-build-deploy-dind:${tag} \
         --build-arg "IMAGE_REPO=$CI_REGISTRY_IMAGE" \
         --build-arg "UPSTREAM_TAG=${tag}"
-      
-      echo "Bulding build-deploy-tool image"

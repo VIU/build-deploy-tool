@@ -46,7 +46,8 @@ spec:
               set -e
               SENTINEL="/storage/.lagoon-rootless-migration-complete"
               if ! [ -f "$SENTINEL" ]; then
-                find /storage -exec chown {{ .Values.podSecurityContext.runAsUser }}:0 {} +
+                # Remove chown.  Doesn't work on EFS mounted volumes.
+                # find /storage -exec chown {{ .Values.podSecurityContext.runAsUser }}:0 {} +
                 find /storage -exec chmod a+r,u+w {} +
                 find /storage -type d -exec chmod a+x {} +
                 touch "$SENTINEL"
