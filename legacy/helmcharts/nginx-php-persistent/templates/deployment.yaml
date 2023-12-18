@@ -110,8 +110,7 @@ spec:
             {{- toYaml .Values.dynamicSecretMounts | nindent 12 }}
           {{- end }}
           resources:
-            {{- toYaml .Values.resources.nginx | nindent 12 }}
-
+            {{- include "resources" (list "resources" .Values.resources .Values.containerResources.nginx) | nindent 12 }}
         - image: {{ .Values.images.php | quote }}
           name: "php"
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -147,7 +146,7 @@ spec:
             {{- toYaml .Values.dynamicSecretMounts | nindent 12 }}
           {{- end }}
           resources:
-            {{- toYaml .Values.resources.php | nindent 12 }}
+            {{- include "resources" (list "resources" .Values.resources .Values.containerResources.php ) | nindent 12 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
