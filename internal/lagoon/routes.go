@@ -3,6 +3,7 @@ package lagoon
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -19,6 +20,7 @@ type RoutesV2 struct {
 // RouteV2 is the new route definition
 type RouteV2 struct {
 	Domain                string            `json:"domain"`
+	Path                  string            `json:"path,omitempty"`
 	LagoonService         string            `json:"service"`
 	ComposeService        string            `json:"composeService"` // the
 	TLSAcme               *bool             `json:"tls-acme"`
@@ -46,6 +48,7 @@ type Ingress struct {
 	TLSAcme               *bool             `json:"tls-acme,omitempty"`
 	Migrate               *bool             `json:"migrate,omitempty"`
 	Insecure              *string           `json:"insecure,omitempty"`
+	Path                  string            `json:"path,omitempty"`
 	MonitoringPath        string            `json:"monitoring-path,omitempty"`
 	Fastly                Fastly            `json:"fastly,omitempty"`
 	Annotations           map[string]string `json:"annotations,omitempty"`
@@ -68,6 +71,7 @@ type Route struct {
 // defaults
 var (
 	defaultHSTSMaxAge                       = 31536000
+	defaultPath           string            = "/"
 	defaultMonitoringPath string            = "/"
 	defaultFastlyService  string            = ""
 	defaultFastlyWatch    bool              = false
@@ -121,6 +125,7 @@ func GenerateRoutesV2(yamlRoutes *RoutesV2, routeMap map[string][]Route, variabl
 			// set the defaults for routes
 			newRoute.TLSAcme = defaultTLSAcme
 			newRoute.Insecure = defaultInsecure
+			newRoute.Path = defaultPath
 			newRoute.MonitoringPath = defaultMonitoringPath
 			newRoute.Annotations = defaultAnnotations
 			newRoute.Fastly.ServiceID = defaultFastlyService
@@ -134,9 +139,26 @@ func GenerateRoutesV2(yamlRoutes *RoutesV2, routeMap map[string][]Route, variabl
 				// this route from the lagoon route map contains field overrides
 				// update them from the defaults in this case
 				for iName, ingress := range lagoonRoute.Ingresses {
-					newRoute.Domain = iName
+					if ingress.Path != "" {
+						newRoute.Path = ingress.Path
+					}
+					// Split the URL into hostname and path
+					parsedURL, _ := url.Parse("https://" + iName)
+					hostname := parsedURL.Hostname()
+					path := parsedURL.Path
+					ingressName := hostname
+					// print out the values
+					fmt.Printf("iName: %s\n", iName)
+					fmt.Printf("hostname: %s\n", hostname)
+					fmt.Printf("path: %s\n", path)
+					fmt.Printf("ingressName: %s\n", ingressName)
+					if path != "" && path != "/" {
+						ingressName = ingressName + "-" + strings.Replace(strings.TrimPrefix(path, "/"), "/", "-", -1)
+					}
+					newRoute.Domain = hostname
+					newRoute.Path = path
 					newRoute.LagoonService = rName
-					newRoute.IngressName = iName
+					newRoute.IngressName = ingressName
 					newRoute.IngressClass = defaultIngressClass
 					newRoute.Fastly = ingress.Fastly
 					if ingress.Annotations != nil {
@@ -187,6 +209,8 @@ func GenerateRoutesV2(yamlRoutes *RoutesV2, routeMap map[string][]Route, variabl
 							return fmt.Errorf("Route %s has wildcard: true and alternativenames defined, this is not supported", newRoute.Domain)
 						}
 						newRoute.IngressName = fmt.Sprintf("wildcard-%s", newRoute.Domain)
+						// print out the wildcard ingress name
+						fmt.Printf("Lagoon: Generated ingress name %s for route %s\n", newRoute.IngressName, newRoute.Domain)
 						if err := validation.IsDNS1123Subdomain(strings.ToLower(newRoute.IngressName)); err != nil {
 							newRoute.IngressName = fmt.Sprintf("%s-%s", newRoute.IngressName[:len(newRoute.IngressName)-10], helpers.GetMD5HashWithNewLine(newRoute.Domain)[:5])
 						}
@@ -195,9 +219,18 @@ func GenerateRoutesV2(yamlRoutes *RoutesV2, routeMap map[string][]Route, variabl
 			} else {
 				// this route is just a domain
 				// keep the defaults, just set the name and service
-				newRoute.Domain = lagoonRoute.Name
+				parsedUrl, _ := url.Parse("https://" + lagoonRoute.Name)
+				hostname := parsedUrl.Hostname()
+				path := parsedUrl.Path
+				newRoute.Domain = hostname
+				newRoute.Path = path
+				ingressName := hostname
+				if path != "" && path != "/" {
+					ingressName = ingressName + "-" + strings.Replace(strings.TrimPrefix(path, "/"), "/", "-", -1)
+				}
+				//newRoute.Domain = lagoonRoute.Name
 				newRoute.LagoonService = rName
-				newRoute.IngressName = lagoonRoute.Name
+				newRoute.IngressName = ingressName
 			}
 			// generate the fastly configuration for this route
 			err := GenerateFastlyConfiguration(&newRoute.Fastly, "", newRoute.Fastly.ServiceID, newRoute.Domain, secretPrefix, variables)

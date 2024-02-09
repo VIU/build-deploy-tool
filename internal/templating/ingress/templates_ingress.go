@@ -252,6 +252,9 @@ func GenerateIngressTemplate(
 
 	// set up the pathtype prefix for the host rule
 	pt := networkv1.PathTypePrefix
+	if route.Path == "" {
+		route.Path = "/"
+	}
 	// add the main domain as the first rule in the spec
 	ingress.Spec.Rules = []networkv1.IngressRule{
 		{
@@ -260,7 +263,7 @@ func GenerateIngressTemplate(
 				HTTP: &networkv1.HTTPIngressRuleValue{
 					Paths: []networkv1.HTTPIngressPath{
 						{
-							Path:     "/",
+							Path:     route.Path,
 							PathType: &pt,
 							Backend: networkv1.IngressBackend{
 								Service: &networkv1.IngressServiceBackend{

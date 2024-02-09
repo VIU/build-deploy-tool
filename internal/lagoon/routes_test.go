@@ -413,6 +413,89 @@ func TestGenerateRouteStructure(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "test8 - route with path",
+			args: args{
+				yamlRoutes: &RoutesV2{},
+				yamlRouteMap: map[string][]Route{
+					"nginx": {
+						{
+							Ingresses: map[string]Ingress{
+								"example.com/test": {},
+							},
+						},
+					},
+				},
+			},
+			want: &RoutesV2{
+				Routes: []RouteV2{
+					{
+						Domain:         "example.com",
+						LagoonService:  "nginx",
+						Path:           "/test",
+						MonitoringPath: "/",
+						Insecure:       helpers.StrPtr("Redirect"),
+						TLSAcme:        helpers.BoolPtr(true),
+						Annotations:    map[string]string{},
+						Fastly: Fastly{
+							Watch: false,
+						},
+						AlternativeNames: []string{},
+						IngressName:      "example.com-test",
+					},
+				},
+			},
+		},
+		{
+			name: "test8 - simple routes",
+			args: args{
+				yamlRoutes: &RoutesV2{},
+				yamlRouteMap: map[string][]Route{
+					"nginx": {
+						{
+							Name: "example.com/test/path",
+						},
+						{
+							Name: "www.example.com/test/path",
+						},
+					},
+				},
+				secretPrefix:  "",
+				activeStandby: false,
+			},
+			want: &RoutesV2{
+				Routes: []RouteV2{
+					{
+						Domain:         "example.com",
+						LagoonService:  "nginx",
+						Path:           "/test/path",
+						MonitoringPath: "/",
+						Insecure:       helpers.StrPtr("Redirect"),
+						TLSAcme:        helpers.BoolPtr(true),
+						Annotations:    map[string]string{},
+						Fastly: Fastly{
+							Watch: false,
+						},
+						AlternativeNames: []string{},
+						IngressName:      "example.com-test-path",
+					},
+					{
+						Domain:         "www.example.com",
+						LagoonService:  "nginx",
+						Path:           "/test/path",
+						MonitoringPath: "/",
+						Insecure:       helpers.StrPtr("Redirect"),
+						TLSAcme:        helpers.BoolPtr(true),
+						Annotations:    map[string]string{},
+						Fastly: Fastly{
+							Watch: false,
+						},
+						AlternativeNames: []string{},
+						IngressName:      "www.example.com-test-path",
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
