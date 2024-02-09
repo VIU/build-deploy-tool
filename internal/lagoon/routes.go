@@ -117,6 +117,24 @@ func (r *Route) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &r.Ingresses)
 }
 
+// splitURL splits the given URL string into hostname and path.
+//
+// It takes a urlString parameter of type string and returns two strings.
+func splitURL(urlString string) (string, string) {
+	parsedURL, _ := url.Parse("https://" + urlString)
+	return parsedURL.Hostname(), parsedURL.Path
+}
+
+// getIngressName generates an ingress name from the hostname and path
+func getIngressName(hostname, path string) string {
+	ingressName := hostname
+	if path != "" && path != "/" {
+		// remove the leading slash from the path if it exists and separate URL parts with a dash
+		ingressName = ingressName + "-" + strings.Replace(strings.TrimPrefix(path, "/"), "/", "-", -1)
+	}
+	return ingressName
+}
+
 // GenerateRoutesV2 generate routesv2 definitions from lagoon route mappings
 func GenerateRoutesV2(yamlRoutes *RoutesV2, routeMap map[string][]Route, variables []EnvironmentVariable, defaultIngressClass, secretPrefix string, activeStandby bool) error {
 	for rName, lagoonRoutes := range routeMap {
@@ -142,23 +160,11 @@ func GenerateRoutesV2(yamlRoutes *RoutesV2, routeMap map[string][]Route, variabl
 					if ingress.Path != "" {
 						newRoute.Path = ingress.Path
 					}
-					// Split the URL into hostname and path
-					parsedURL, _ := url.Parse("https://" + iName)
-					hostname := parsedURL.Hostname()
-					path := parsedURL.Path
-					ingressName := hostname
-					// print out the values
-					fmt.Printf("iName: %s\n", iName)
-					fmt.Printf("hostname: %s\n", hostname)
-					fmt.Printf("path: %s\n", path)
-					fmt.Printf("ingressName: %s\n", ingressName)
-					if path != "" && path != "/" {
-						ingressName = ingressName + "-" + strings.Replace(strings.TrimPrefix(path, "/"), "/", "-", -1)
-					}
+					hostname, path := splitURL(iName)
 					newRoute.Domain = hostname
 					newRoute.Path = path
 					newRoute.LagoonService = rName
-					newRoute.IngressName = ingressName
+					newRoute.IngressName = getIngressName(hostname, path)
 					newRoute.IngressClass = defaultIngressClass
 					newRoute.Fastly = ingress.Fastly
 					if ingress.Annotations != nil {
@@ -219,18 +225,12 @@ func GenerateRoutesV2(yamlRoutes *RoutesV2, routeMap map[string][]Route, variabl
 			} else {
 				// this route is just a domain
 				// keep the defaults, just set the name and service
-				parsedUrl, _ := url.Parse("https://" + lagoonRoute.Name)
-				hostname := parsedUrl.Hostname()
-				path := parsedUrl.Path
+				hostname, path := splitURL(lagoonRoute.Name)
 				newRoute.Domain = hostname
 				newRoute.Path = path
-				ingressName := hostname
-				if path != "" && path != "/" {
-					ingressName = ingressName + "-" + strings.Replace(strings.TrimPrefix(path, "/"), "/", "-", -1)
-				}
 				//newRoute.Domain = lagoonRoute.Name
 				newRoute.LagoonService = rName
-				newRoute.IngressName = ingressName
+				newRoute.IngressName = getIngressName(hostname, path)
 			}
 			// generate the fastly configuration for this route
 			err := GenerateFastlyConfiguration(&newRoute.Fastly, "", newRoute.Fastly.ServiceID, newRoute.Domain, secretPrefix, variables)
