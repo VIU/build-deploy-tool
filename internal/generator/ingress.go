@@ -59,12 +59,16 @@ func generateRoutes(
 		// 	remainders = append(remainders, primary)
 		// }
 		for i := 0; i < len(mainRoutes.Routes); i++ {
+			path := ""
+			if mainRoutes.Routes[i].Path != "" && mainRoutes.Routes[i].Path != "/" {
+				path = mainRoutes.Routes[i].Path
+			}
 			if i == 0 {
-				primary = fmt.Sprintf("%s%s", prefix, mainRoutes.Routes[i].Domain)
+				primary = fmt.Sprintf("%s%s%s", prefix, mainRoutes.Routes[i].Domain, path)
 				// } else {
 				// 	remainders = append(remainders, fmt.Sprintf("%s%s", prefix, mainRoutes.Routes[i].Domain))
 			}
-			remainders = append(remainders, fmt.Sprintf("%s%s", prefix, mainRoutes.Routes[i].Domain))
+			remainders = append(remainders, fmt.Sprintf("%s%s%s", prefix, mainRoutes.Routes[i].Domain, path))
 			for a := 0; a < len(mainRoutes.Routes[i].AlternativeNames); a++ {
 				remainders = append(remainders, fmt.Sprintf("%s%s", prefix, mainRoutes.Routes[i].AlternativeNames[a]))
 			}
