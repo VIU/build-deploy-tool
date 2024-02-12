@@ -1393,7 +1393,7 @@ if [[ "$CUSTOM_ROUTES_DISABLED" == true ]] && [[ "$AUTOGEN_ROUTES_DISABLED" == t
 fi
 
 # Load all routes with correct schema and comma separated
-ROUTES=$(kubectl -n ${NAMESPACE} get ingress --sort-by='{.metadata.name}' -l "acme.cert-manager.io/http01-solver!=true" -o=go-template --template='{{range $indexItems, $ingress := .items}}{{if $indexItems}},{{end}}{{$tls := .spec.tls}}{{range $indexRule, $rule := .spec.rules}}{{if $indexRule}},{{end}}{{if $tls}}https://{{else}}http://{{end}}{{.host}}{{end}}{{end}}')
+ROUTES=$(kubectl -n ${NAMESPACE} get ingress --sort-by='{.metadata.name}' -l "acme.cert-manager.io/http01-solver!=true" -o=go-template --template='{{range $indexItems, $ingress := .items}}{{if $indexItems}},{{end}}{{$tls := .spec.tls}}{{range $indexRule, $rule := .spec.rules}}{{if $indexRule}},{{end}}{{if $tls}}https://{{else}}http://{{end}}{{.host}}{{(index .http.paths 0).path}}{{end}}{{end}}')
 
 # swap dioscuri for activestanby label
 for ingress in $(kubectl  -n ${NAMESPACE} get ingress -l "dioscuri.amazee.io/migrate" -o json | jq -r '.items[] | @base64'); do
